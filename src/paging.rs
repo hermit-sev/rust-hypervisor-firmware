@@ -45,7 +45,7 @@ pub fn setup(plain_text: bool, initrd_plain_text_addr: u64, initrd_size_aligned:
     // Setup Identity map for the first 2MB region using L2 huge pages
     let mut next_addr = PhysAddr::new(0);
     for e in l1.iter_mut() {
-        let addr = if next_addr.as_u64() == GHCB_ADDR as u64 {
+        let addr = if next_addr.as_u64() == GHCB_ADDR as u64 && plain_text {
             PhysAddr::new(next_addr.as_u64())
         } else {
             PhysAddr::new(next_addr.as_u64() | SEV_ENC_BIT)
@@ -144,7 +144,7 @@ pub fn pvalidate_ram(
             npgs -= 4;
         }
         // //skip over ghcb page if
-        if start_pg == (GHCB_PAGE >> 12) {
+        if start_pg == (GHCB_PAGE >> 12) && plain_text {
             start_pg += 1;
             npgs -= 1;
         }

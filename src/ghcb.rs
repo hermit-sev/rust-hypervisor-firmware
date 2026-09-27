@@ -50,7 +50,7 @@ pub fn page_state_change(addr: u64, len: u64, private: bool) {
     };
     let mut addr = addr;
 
-    let prev_value = unsafe { ghcb_msr.read() };
+    // let prev_value = unsafe { ghcb_msr.read() };
     while len_aligned > 0 {
         let mut value = if private { 1 << 52 } else { 2 << 52 };
         value |= addr & !0xfff;
@@ -66,13 +66,27 @@ pub fn page_state_change(addr: u64, len: u64, private: bool) {
         len_aligned -= 0x1000;
         addr += 0x1000;
     }
-    unsafe { ghcb_msr.write(prev_value) };
+    // unsafe { ghcb_msr.write(prev_value) };
 }
 
 pub fn register_ghcb_page() {
     let mut ghcb_msr = x86_64::registers::model_specific::Msr::new(GHCB_MSR);
 
     unsafe { ghcb_msr.write(GHCB_ADDR as u64 | 0x12) };
+
+    vmgexit();
+
+    //TODO check response
+    let _response = unsafe { ghcb_msr.read() };
+
+    unsafe { ghcb_msr.write(GHCB_ADDR as u64) };
+}
+
+
+pub fn unregister_ghcb_page() {
+    let mut ghcb_msr = x86_64::registers::model_specific::Msr::new(GHCB_MSR);
+
+    unsafe { ghcb_msr.write(GHCB_ADDR as u64 | 0x18) };
 
     vmgexit();
 

@@ -12,6 +12,7 @@ use crate::{
 };
 use sha2::Digest;
 use sha2::Sha256;
+use crate::ghcb::GHCB_ADDR;
 
 //load the kernel at 2mib in encrypted memory
 const KERNEL_LOAD: u64 = 0x200000;
@@ -175,8 +176,12 @@ impl FwCfg {
             self.load_initrd(initrd_plain_text_addr, initrd_load_addr, initrd_len)?;
         }
 
+        ghcb::unregister_ghcb_page();
+
         //set the plain text region for the kernel and the ghcb page private
         ghcb::page_state_change(KERNEL_ADDR, KERNEL_MAX_LEN, true);
+
+        ghcb::page_state_change(GHCB_ADDR as u64, 0x1000, true);
 
         //set plain text region for initrd private
         ghcb::page_state_change(initrd_plain_text_addr, initrd_size_aligned, true);
@@ -188,6 +193,14 @@ impl FwCfg {
         let entry = boot_e820_entry {
             addr: KERNEL_ADDR,
             size: KERNEL_MAX_LEN,
+            type_: 1,
+        };
+        paging::pvalidate_ram(&entry, 0 as u64, 0, 0, false);
+
+        //re-validate the region we used for the plain text initrd
+        let entry = boot_e820_entry {
+            addr: GHCB_ADDR as u64,
+            size: 0x1000,
             type_: 1,
         };
         paging::pvalidate_ram(&entry, 0 as u64, 0, 0, false);
