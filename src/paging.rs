@@ -12,6 +12,7 @@ use crate::{
 };
 use x86_64::instructions::port::Port;
 use x86_64::structures::paging::Size4KiB;
+use x86_64::structures::paging::Size1GiB;
 // Amount of memory we identity map in setup(), max 512 GiB.
 #[no_mangle]
 static ADDRESS_SPACE_GIB_COPY: u32 = 1;
@@ -73,10 +74,19 @@ pub fn setup(plain_text: bool, initrd_plain_text_addr: u64, initrd_size_aligned:
         next_addr += Size2MiB::SIZE;
     }
 
-    // Point L3 at L2s
-    let addr = phys_addr(l2).as_u64() | SEV_ENC_BIT;
-    let addr = PhysAddr::new(addr);
-    l3[0].set_addr(addr, pt_flags);
+    // Point L3 at L2s + huge pages
+    let mut next_addr = PhysAddr::new(0);
+    for l3e in l3.iter_mut() {
+        if next_addr.as_u64() == 0 {
+            l3e.set_addr(
+                PhysAddr::new(phys_addr(l2).as_u64() | SEV_ENC_BIT),
+                pt_flags,
+            );
+        } else {
+            l3e.set_addr(PhysAddr::new(next_addr.as_u64() | SEV_ENC_BIT), pt_flags | PageTableFlags::HUGE_PAGE);
+        }
+        next_addr += Size1GiB::SIZE;
+    }
 
     // Point L4 at L3
     let addr = phys_addr(l3).as_u64() | SEV_ENC_BIT;
