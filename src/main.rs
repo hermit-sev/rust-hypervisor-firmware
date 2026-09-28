@@ -150,6 +150,19 @@ fn main(kernel_len: u32, stack_start: u32) -> ! {
         }
     }
 
+    // HOTFIX: Also validate the entire "system" memory space
+    paging::pvalidate_ram(
+        &boot_e820_entry {
+            type_: 1,
+            addr: 0x9f000,
+            size: (0x100000 - 0x9f000),
+        },
+        stack_start as u64,
+        initrd_plain_text_addr,
+        initrd_size_aligned,
+        true,
+    );
+
     let mut loader = fw_cfg::FwCfg::new();
 
     loader

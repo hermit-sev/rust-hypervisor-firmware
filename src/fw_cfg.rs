@@ -12,7 +12,7 @@ use crate::{
 };
 use sha2::Digest;
 use sha2::Sha256;
-use crate::ghcb::GHCB_ADDR;
+use crate::ghcb::{GHCB_ADDR, GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_INITRD, GHCB_HASH_MISMATCH_KERNEL};
 
 //load the kernel at 2mib in encrypted memory
 const KERNEL_LOAD: u64 = 0x200000;
@@ -132,8 +132,9 @@ impl FwCfg {
         hasher.update(encrypted_region.as_bytes());
         let hash = hasher.finalize();
 
-        Self::validate_hash(&hash, &self.initrd_hash.as_bytes())
-            .map_err(|_| "Failed to validate initrd hash")?;
+        if Self::validate_hash(&hash, &self.initrd_hash.as_bytes()).is_err() {
+            ghcb::request_exit(GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_INITRD);
+        }
         Self::debug_write(INITRD_HASH_END);
 
         Ok(())
@@ -163,8 +164,11 @@ impl FwCfg {
         let mut hasher = Sha256::new();
         hasher.update(load_region.as_bytes());
         let hash = hasher.finalize();
-        // Self::validate_hash(&hash, &self.kernel_hash.as_bytes())
-        //     .map_err(|_| "bzImage verification failed")?;
+        if Self::validate_hash(&hash, &self.kernel_hash.as_bytes()).is_err() {
+            ghcb::request_exit(GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_KERNEL);
+        }
+
+
         Self::debug_write(HASH_END);
 
         let mut kernel = Kernel::new();

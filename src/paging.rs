@@ -10,6 +10,7 @@ use x86_64::instructions::port::Port;
 use crate::{
     boot::boot_e820_entry,
     fw_cfg::{KERNEL_ADDR, KERNEL_MAX_LEN},
+    ghcb
 };
 use crate::{
     ghcb::GHCB_ADDR,
@@ -227,16 +228,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
         }
 
         if rc != 0 {
-            unsafe { debug_port.write(0x88 as u8) };
-            loop {
-                hlt();
-            }
+            ghcb::request_exit(0x01, 0x10);
         }
 
         if cf != 0 {
-            unsafe { debug_port.write(0x89 as u8) };
-            loop {
-                hlt();
+            unsafe {
+                // INFO: RMP was not changed
+                debug_port.write(0x10);
             }
         }
 
@@ -280,16 +278,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
         }
 
         if rc != 0 {
-            unsafe { debug_port.write(0x88 as u8) };
-            loop {
-                hlt();
-            }
+            ghcb::request_exit(0x01, 0x21);
         }
 
         if cf != 0 {
-            unsafe { debug_port.write(0x89 as u8) };
-            loop {
-                hlt();
+            unsafe {
+                // INFO: RMP was not changed
+                debug_port.write(0x10);
             }
         }
 
@@ -297,16 +292,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
     }
 
     if rc != 0 {
-        unsafe { debug_port.write(0x88 as u8) };
-        loop {
-            hlt();
-        }
+        ghcb::request_exit(0x01, 0x31);
     }
 
     if cf != 0 {
-        unsafe { debug_port.write(0x89 as u8) };
-        loop {
-            hlt();
+        unsafe {
+            // INFO: RMP was not changed
+            debug_port.write(0x10);
         }
     }
 
