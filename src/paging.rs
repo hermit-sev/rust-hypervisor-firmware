@@ -5,7 +5,7 @@ use x86_64::{
     PhysAddr,
 };
 
-use crate::{boot::BootE820Entry, fw_cfg::BOUNCE_BUFFER_ADDR};
+use crate::{boot::BootE820Entry, fw_cfg::BOUNCE_BUFFER_ADDR, ghcb};
 use crate::{
     ghcb::GHCB_ADDR,
     loader::{SECRETS_PAGE_ADDR, SECRETS_PAGE_LEN},
@@ -222,16 +222,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
         }
 
         if rc != 0 {
-            unsafe { debug_port.write(0x88 as u8) };
-            loop {
-                hlt();
-            }
+            ghcb::request_exit(0x01, 0x10);
         }
 
         if cf != 0 {
-            unsafe { debug_port.write(0x89 as u8) };
-            loop {
-                hlt();
+            unsafe {
+                // INFO: RMP was not changed
+                debug_port.write(0x10);
             }
         }
 
@@ -267,16 +264,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
         }
 
         if rc != 0 {
-            unsafe { debug_port.write(0x88 as u8) };
-            loop {
-                hlt();
-            }
+            ghcb::request_exit(0x01, 0x21);
         }
 
         if cf != 0 {
-            unsafe { debug_port.write(0x89 as u8) };
-            loop {
-                hlt();
+            unsafe {
+                // INFO: RMP was not changed
+                debug_port.write(0x10);
             }
         }
 
@@ -284,16 +278,13 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
     }
 
     if rc != 0 {
-        unsafe { debug_port.write(0x88 as u8) };
-        loop {
-            hlt();
-        }
+        ghcb::request_exit(0x01, 0x31);
     }
 
     if cf != 0 {
-        unsafe { debug_port.write(0x89 as u8) };
-        loop {
-            hlt();
+        unsafe {
+            // INFO: RMP was not changed
+            debug_port.write(0x10);
         }
     }
 

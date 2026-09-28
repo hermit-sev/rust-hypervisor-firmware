@@ -25,6 +25,7 @@ use crate::{
 use sha2::Digest;
 use sha2::Sha256;
 use x86_64::structures::paging::{PageSize, Size2MiB};
+use crate::ghcb::{GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_INITRD, GHCB_HASH_MISMATCH_KERNEL};
 
 // load the kernel at 2mib in encrypted memory
 // Firecracker puts kernel at 32mib
@@ -169,8 +170,9 @@ impl FwCfg {
         hasher.update(encrypted_region.as_bytes());
         let hash = hasher.finalize();
 
-        //Self::validate_hash(&hash, &self.initrd_hash.as_bytes())
-        //    .map_err(|_| "Failed to validate initrd hash")?;
+        if Self::validate_hash(&hash, &self.initrd_hash.as_bytes()).is_err() {
+            ghcb::request_exit(GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_INITRD);
+        }
         Self::debug_write(INITRD_HASH_END);
 
         Ok(())
@@ -414,7 +416,9 @@ impl FwCfg {
         Self::debug_write(HASH_END);
 
         //Verify segments hash
-        // Self::validate_hash(&seg_hash, &self.kernel_hash.as_bytes()).map_err(|_| "kernel verification failed")?;
+        if Self::validate_hash(&seg_hash, &self.kernel_hash.as_bytes()).is_err() {
+            ghcb::request_exit(GHCB_EXIT_HASH_MISMATCH, GHCB_HASH_MISMATCH_KERNEL);
+        }
 
         Self::debug_write(0x90);
 
@@ -529,10 +533,6 @@ impl FwCfg {
     fn validate_hash(new_hash: &[u8], old_hash: &[u8]) -> Result<(), Error> {
         for i in 0..loader::HASH_SIZE_BYTES as usize {
             if new_hash[i] != old_hash[i] {
-                Self::debug_write(0xFF);
-
-                // FIXME: we SKIP hash validation because it's broken
-                // FIXME: it's fine for a performance publication, but not for real world use ;)
                 return Err(Error::HashMismatch);
             }
         }

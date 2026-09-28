@@ -1,3 +1,4 @@
+use core::arch::asm;
 use crate::mem::MemoryRegion;
 
 pub const GHCB_ADDR: u32 = 0x3000; //48MiB
@@ -39,6 +40,32 @@ pub struct Ghcb {
 
 pub static mut GHCB_PAGE: MemoryRegion =
     MemoryRegion::new(GHCB_ADDR as u64, core::mem::size_of::<Ghcb>() as u64);
+
+pub const GHCB_EXIT_PVALIDATE: u8 = 0x1;
+
+pub const GHCB_EXIT_HASH_MISMATCH: u8 = 0x2;
+pub const GHCB_HASH_MISMATCH_KERNEL: u8 = 0x20;
+pub const GHCB_HASH_MISMATCH_INITRD: u8 = 0x21;
+
+pub fn request_exit(code: u8, reason: u8) -> ! {
+    let mut ghcb_msr = x86_64::registers::model_specific::Msr::new(GHCB_MSR);
+
+    unsafe {
+        ghcb_msr.write(
+            (reason as u64) << 16 |
+                (code as u64) << 24 |
+                0x100
+        );
+        core::arch::asm!("rep; vmmcall\n\r");
+    }
+
+    loop {
+        unsafe {
+            asm!("hlt")
+        }
+    }
+
+}
 
 pub fn page_state_change(addr: u64, len: u64, private: bool) {
     let mut ghcb_msr = x86_64::registers::model_specific::Msr::new(GHCB_MSR);
