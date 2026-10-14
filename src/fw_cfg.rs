@@ -22,7 +22,7 @@ pub const KERNEL_END_ADDR: u64 = KERNEL_ADDR + KERNEL_MAX_LEN;
 //Max bzImage length (16MiB)
 pub const KERNEL_MAX_LEN: u64 = 0x1000000;
 
-const DEBUG_PORT: u16 = 0x80;
+use crate::DEBUG_PORT;
 const FW_CFG_REG: u16 = 0x81;
 const FW_CFG_DATA_BASE: u64 = 0x200000;
 const FW_CFG_DATA_SIZE: u64 = 0x1000000;

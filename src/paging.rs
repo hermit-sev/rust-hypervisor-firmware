@@ -219,7 +219,7 @@ pub fn pvalidate(start: u64, valid: u32) -> u64 {
     let mut rc: u32;
     let mut page_size = 1;
 
-    let mut debug_port = Port::<u8>::new(0x80);
+    let mut debug_port = Port::<u8>::new(crate::DEBUG_PORT);
 
     //try 2mb first
     if addr & (0x200000 - 1) != 0 {
