@@ -40,7 +40,7 @@ impl Kernel {
     pub fn boot(&mut self) {
         let jump_address = self.entry_point;
 
-        let mut debug_port = Port::<u8>::new(0x80);
+        let mut debug_port = Port::<u8>::new(crate::DEBUG_PORT);
         let ct = jump_address as *const u8;
 
         unsafe { debug_port.write(0xa0) }

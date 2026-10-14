@@ -49,6 +49,9 @@ mod loader;
 mod mem;
 mod paging;
 
+/// Port for debug and timing markers. Under SNP, writes need a registered GHCB.
+pub const DEBUG_PORT: u16 = 0xe9;
+
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     #[cfg(debug_assertions)]
@@ -119,7 +122,7 @@ fn main(kernel_len: u32, stack_start: u32) -> ! {
     ghcb::register_ghcb_page();
 
     //signal firmware start, although a bit late this is the earliest we can do it
-    let mut debug_port = Port::<u8>::new(0x80);
+    let mut debug_port = Port::<u8>::new(DEBUG_PORT);
     unsafe {
         debug_port.write(0x00);
     };

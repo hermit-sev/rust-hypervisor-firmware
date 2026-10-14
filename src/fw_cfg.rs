@@ -34,7 +34,7 @@ pub const BOUNCE_BUFFER_ADDR: u64 = 0x1000000 - 0x200000;
 pub const KERNEL_LOAD_ADDR: u64 = 0x1000000;
 // Max bzImage length (16MiB)
 
-const DEBUG_PORT: u16 = 0x80;
+use crate::DEBUG_PORT;
 const FW_CFG_REG: u16 = 0x81;
 const FW_CFG_DATA_BASE: u64 = 0x1000000 - 0x200000;
 const FW_CFG_DATA_SIZE: u64 = 0x200000;
